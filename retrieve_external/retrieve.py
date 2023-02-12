@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
 
-from retrieve_external import bgpribs, riperecent, rirdelegations, relationships, peeringdb, pch
+from retrieve_external import asorg, bgpribs, itdk, riperecent, rirdelegations, relationships, peeringdb, pch, prefix2as
 from retrieve_external.caidatraceroute import get_caidateam, get_caidaprefix
+from retrieve_external import publictraceroute
 
 def main():
     parser = ArgumentParser()
@@ -21,6 +22,12 @@ def main():
     caidap = sub.add_parser('caida-prefix', help='Retrieve the CAIDA prefix probing traceroutes.')
     caidap.set_defaults(func=get_caidaprefix)
 
+    publict = sub.add_parser('public-team', help='Retrieve the public CAIDA team probing traces')
+    publict.set_defaults(func=publictraceroute.get_publicteam)
+
+    publicp = sub.add_parser('public-prefix', help='Retrieve the public CAIDA prefix probing traces')
+    publicp.set_defaults(func=publictraceroute.get_publicprefix)
+
     bgp = sub.add_parser('bgp', help='Retrieve bgp RIBs from RouteViews and RIPE RIS.')
     bgp.set_defaults(func=bgpribs.get)
 
@@ -38,6 +45,21 @@ def main():
 
     riperecentp = sub.add_parser('ripe-recent', help='Retrieve recent RIPE Atlas traceroutes')
     riperecentp.set_defaults(func=riperecent.get)
+
+    asorgp = sub.add_parser('asorg', help='Retrieve AS2Org files.')
+    asorgp.set_defaults(func=asorg.get)
+
+    prefix2asp = sub.add_parser('prefix2as', help='Retrieve prefix2as files.')
+    prefix2asp.set_defaults(func=prefix2as.get)
+
+    asorgp = sub.add_parser('asorg', help='Retrieve AS2Org files.')
+    asorgp.set_defaults(func=asorg.get)
+
+    itdkpp = sub.add_parser('public-itdk', help='Retrieve public ITDK files.')
+    itdkpp.set_defaults(func=itdk.get_public)
+
+    itdkpc = sub.add_parser('caida-itdk', help='Retrieve CAIDA ITDK files.')
+    itdkpc.set_defaults(func=itdk.get_caida)
 
     args = parser.parse_args()
     if not args.end:

@@ -1,7 +1,7 @@
 import sys
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from datetime import timedelta
+from datetime import datetime, timedelta
 from multiprocessing.pool import Pool
 from os import makedirs
 from os.path import basename, join as pjoin
@@ -27,8 +27,6 @@ class AbstractRetriever(ABC):
         self.days = [self.begin + timedelta(i) for i in range(0, (self.end - self.begin).days + 1, self.interval)]
         self.processes = args.processes
         self.dir = args.dir
-        if self.dir != '.' and self.dir != '..':
-            makedirs(self.dir, exist_ok=True)
 
     def newfilename(self, url: str):
         return basename(urlparse(url).path)
@@ -39,11 +37,16 @@ class AbstractRetriever(ABC):
             print('\r\033[KWarning: {}'.format(info.url), file=sys.stderr)
             return 0
         content = r.content
+        makedirs(self.dir, exist_ok=True)  # Does nothing whenever called from parallel_download
         with open(pjoin(self.dir, info.filename), 'wb') as f:
             f.write(content)
         return len(content)
 
     def parallel_download(self, urls):
+        makedirs(self.dir, exist_ok=True)
+        if not urls:
+            print('No files found to download')
+            return
         totalsize = 0
         pb = Progress(len(urls), 'Downloading files',
                       callback=lambda: 'Size {}'.format(format_size(totalsize)))
@@ -53,3 +56,18 @@ class AbstractRetriever(ABC):
                     totalsize += size
         except KeyboardInterrupt:
             print('Ending prematurely.')
+
+    def map_dates(self, file_dates):
+        i = 0
+        sorted_dates = sorted(file_dates)
+        sorted_dates.append(datetime(9999, 1, 1))  # sentinel
+        inputdate2filedate = {}
+        for d in self.days:
+            while sorted_dates[i + 1] < d:
+                # Try to place d between sorted_dates[i] and sorted_dates[i+1]
+                i += 1
+            if abs(d - sorted_dates[i]) < abs(sorted_dates[i + 1] - d):
+                inputdate2filedate[d] = sorted_dates[i]
+            else:
+                inputdate2filedate[d] = sorted_dates[i + 1]
+        return inputdate2filedate
